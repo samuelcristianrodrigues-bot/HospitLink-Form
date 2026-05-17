@@ -1,0 +1,861 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Intake Form</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --cream: #FAF7F2;
+  --dark: #1A1A18;
+  --accent: #C8A96E;
+  --accent-light: #E8D9BC;
+  --muted: #6B6B63;
+  --white: #FFFFFF;
+  --border: #E2DDD5;
+  --success: #4A7C59;
+  --err: #C0392B;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'DM Sans',sans-serif; background:var(--cream); color:var(--dark); min-height:100vh; padding-bottom:60px; }
+
+.header { background:var(--dark); padding:22px 40px; display:flex; align-items:center; justify-content:space-between; position:sticky; top:0; z-index:100; }
+.logo { font-family:'DM Serif Display',serif; font-size:20px; color:var(--accent); }
+.logo em { color:var(--white); font-style:italic; }
+.prog-text { font-size:12px; color:var(--accent-light); font-weight:300; letter-spacing:.05em; }
+.prog-wrap { background:rgba(0,0,0,.15); height:3px; }
+.prog-bar { height:3px; background:var(--accent); transition:width .4s ease; width:0%; }
+
+.tab-nav { display:flex; background:var(--white); border-bottom:1px solid var(--border); overflow-x:auto; padding:0 32px; scrollbar-width:none; }
+.tab-nav::-webkit-scrollbar { display:none; }
+.tab-btn { padding:14px 18px; border:none; background:none; font-family:'DM Sans',sans-serif; font-size:11px; font-weight:600; color:var(--muted); cursor:pointer; white-space:nowrap; border-bottom:2px solid transparent; margin-bottom:-1px; transition:color .2s,border-color .2s; letter-spacing:.07em; text-transform:uppercase; }
+.tab-btn:hover { color:var(--dark); }
+.tab-btn.active { color:var(--dark); border-bottom-color:var(--accent); }
+.tab-btn.done { color:var(--success); }
+.tab-btn.done::after { content:' ✓'; font-size:10px; }
+
+.main { max-width:700px; margin:44px auto; padding:0 20px; }
+.panel { display:none; }
+.panel.active { display:block; animation:rise .3s ease; }
+@keyframes rise { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+/* INTRO */
+.intro-card { background:var(--dark); border-radius:16px; padding:52px 44px; color:var(--white); position:relative; overflow:hidden; }
+.intro-card::before { content:''; position:absolute; top:-50px; right:-50px; width:220px; height:220px; border-radius:50%; background:var(--accent); opacity:.08; pointer-events:none; }
+.intro-card::after  { content:''; position:absolute; bottom:-70px; left:-30px; width:280px; height:280px; border-radius:50%; background:var(--accent); opacity:.05; pointer-events:none; }
+.intro-tag { display:inline-block; background:var(--accent); color:var(--dark); font-size:10px; font-weight:700; letter-spacing:.12em; text-transform:uppercase; padding:5px 12px; border-radius:100px; margin-bottom:24px; position:relative; z-index:1; }
+.intro-title { font-family:'DM Serif Display',serif; font-size:38px; line-height:1.15; margin-bottom:16px; position:relative; z-index:1; }
+.intro-title em { color:var(--accent); font-style:italic; }
+.intro-desc { font-size:15px; line-height:1.7; color:rgba(255,255,255,.72); margin-bottom:32px; max-width:500px; position:relative; z-index:1; }
+.steps-grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:36px; position:relative; z-index:1; }
+.step-box { background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.1); border-radius:10px; padding:18px; }
+.step-num { font-family:'DM Serif Display',serif; font-size:26px; color:var(--accent); margin-bottom:4px; }
+.step-name { font-size:14px; font-weight:500; color:var(--white); margin-bottom:2px; }
+.step-sub { font-size:12px; color:rgba(255,255,255,.5); }
+.intro-note { background:rgba(200,169,110,.1); border:1px solid rgba(200,169,110,.22); border-radius:10px; padding:14px 18px; font-size:13px; color:var(--accent-light); line-height:1.6; position:relative; z-index:1; margin-bottom:32px; }
+
+/* SECTION */
+.sec-tag { display:inline-block; background:var(--accent-light); color:var(--dark); font-size:10px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; padding:4px 11px; border-radius:100px; margin-bottom:12px; }
+.sec-title { font-family:'DM Serif Display',serif; font-size:30px; margin-bottom:8px; }
+.sec-desc { font-size:14px; color:var(--muted); line-height:1.6; margin-bottom:32px; }
+
+/* QUESTION CARD */
+.qcard { background:var(--white); border-radius:12px; padding:24px 28px; margin-bottom:16px; border:1.5px solid var(--border); transition:border-color .2s; }
+.qcard.has-error { border-color:var(--err); }
+.qlabel { font-size:15px; font-weight:500; line-height:1.4; margin-bottom:4px; }
+.qmeta { font-size:12px; color:var(--muted); margin-bottom:16px; }
+.qerr { font-size:12px; color:var(--err); margin-top:10px; display:none; }
+.qcard.has-error .qerr { display:block; }
+
+/* OPTIONS — divs, NOT labels, to avoid double-fire */
+.opts { display:flex; flex-direction:column; gap:8px; }
+.opt {
+  display:flex; align-items:center; gap:12px;
+  padding:12px 16px; border:1.5px solid var(--border); border-radius:9px;
+  cursor:pointer; transition:border-color .15s,background .15s;
+  font-size:14px; color:var(--dark); user-select:none;
+}
+.opt:hover { border-color:var(--accent); background:rgba(200,169,110,.04); }
+.opt.selected { border-color:var(--accent); background:rgba(200,169,110,.1); font-weight:500; }
+.dot {
+  width:18px; min-width:18px; height:18px; border:2px solid var(--border);
+  border-radius:50%; transition:all .15s; display:flex; align-items:center;
+  justify-content:center; font-size:11px; font-weight:700; color:var(--white);
+}
+.opt.checkbox .dot { border-radius:5px; }
+.opt.selected .dot { background:var(--accent); border-color:var(--accent); }
+.opt.selected:not(.checkbox) .dot::after { content:''; width:7px; height:7px; background:var(--white); border-radius:50%; display:block; }
+.opt.selected.checkbox .dot::after { content:'✓'; }
+.opt-text { flex:1; }
+
+/* NAV */
+.nav { display:flex; justify-content:space-between; align-items:center; margin-top:32px; padding-top:20px; border-top:1px solid var(--border); }
+
+/* BUTTONS */
+.btn { display:inline-flex; align-items:center; gap:8px; padding:14px 28px; border-radius:100px; font-family:'DM Sans',sans-serif; font-size:14px; font-weight:500; cursor:pointer; border:none; transition:all .2s; }
+.btn-primary { background:var(--accent); color:var(--dark); }
+.btn-primary:hover { background:#b8944f; transform:translateY(-1px); box-shadow:0 5px 18px rgba(200,169,110,.3); }
+.btn-outline { background:transparent; color:var(--dark); border:1.5px solid var(--border); }
+.btn-outline:hover { border-color:var(--accent); color:var(--accent); }
+.btn-white { background:var(--white); color:var(--dark); }
+.btn-white:hover { background:var(--accent-light); }
+
+/* THANK YOU */
+.ty-card { background:var(--dark); border-radius:16px; padding:56px 44px; text-align:center; color:var(--white); }
+.ty-icon { width:64px; height:64px; background:var(--accent); border-radius:50%; display:flex; align-items:center; justify-content:center; margin:0 auto 24px; font-size:26px; }
+.ty-title { font-family:'DM Serif Display',serif; font-size:36px; margin-bottom:14px; }
+.ty-title em { color:var(--accent); font-style:italic; }
+.ty-desc { font-size:15px; color:rgba(255,255,255,.7); line-height:1.7; max-width:460px; margin:0 auto 32px; }
+.ty-grid { display:grid; grid-template-columns:1fr 1fr 1fr; gap:12px; margin-bottom:36px; }
+.ty-box { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.08); border-radius:10px; padding:18px 14px; }
+.ty-ico { font-size:22px; margin-bottom:8px; }
+.ty-txt { font-size:12px; color:rgba(255,255,255,.55); line-height:1.5; }
+.ty-note { font-size:13px; color:rgba(255,255,255,.4); margin-bottom:28px; }
+
+@media(max-width:600px){
+  .header{padding:18px 16px;} .tab-nav{padding:0 12px;} .main{padding:0 14px;margin:28px auto;}
+  .intro-card{padding:32px 24px;} .steps-grid{grid-template-columns:1fr;} .intro-title{font-size:28px;}
+  .qcard{padding:18px;} .ty-grid{grid-template-columns:1fr;} .ty-card{padding:36px 24px;}
+}
+
+/* TEXT INPUTS */
+.input-group { display:flex; flex-direction:column; gap:6px; margin-bottom:16px; }
+.input-group:last-child { margin-bottom:0; }
+.input-label { font-size:13px; font-weight:600; color:var(--dark); letter-spacing:0.02em; }
+.text-input {
+  width:100%; padding:13px 16px; border:1.5px solid var(--border);
+  border-radius:9px; font-family:'DM Sans',sans-serif; font-size:14px;
+  color:var(--dark); background:var(--white); transition:border-color .2s, box-shadow .2s;
+  outline:none;
+}
+.text-input:focus { border-color:var(--accent); box-shadow:0 0 0 3px rgba(200,169,110,0.12); }
+.text-input::placeholder { color:#B0ADA8; }
+.input-row { display:grid; grid-template-columns:1fr 1fr; gap:16px; }
+.profile-note {
+  background:var(--accent-light); border-radius:10px; padding:14px 18px;
+  font-size:13px; color:var(--dark); line-height:1.6; margin-bottom:20px;
+}
+.profile-note strong { font-weight:600; }
+@media(max-width:600px){ .input-row { grid-template-columns:1fr; } }
+</style>
+<script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+</head>
+<body>
+
+<header class="header">
+  <div class="logo">Hosp<em>it</em>Link</div>
+  <div class="prog-text" id="prog-text">Step 1 of 6</div>
+</header>
+<div class="prog-wrap"><div class="prog-bar" id="prog-bar"></div></div>
+
+<nav class="tab-nav">
+  <button class="tab-btn active" data-tab="0">Welcome</button>
+  <button class="tab-btn" data-tab="1">Your Profile</button>
+  <button class="tab-btn" data-tab="2">Personality</button>
+  <button class="tab-btn" data-tab="3">Work Mentality</button>
+  <button class="tab-btn" data-tab="4">Work Preference</button>
+  <button class="tab-btn" data-tab="5">Future &amp; Ambition</button>
+  <button class="tab-btn" data-tab="6">Done</button>
+</nav>
+
+<main class="main">
+<div id="netlify-form">
+
+<!-- ══════════ PANEL 0 — WELCOME ══════════ -->
+<div class="panel active" id="panel-0">
+  <div class="intro-card">
+    <div class="intro-tag">Student Intake Form</div>
+    <h1 class="intro-title">Let us find your <em>perfect</em> match in hospitality</h1>
+    <p class="intro-desc">This isn't your typical job application. We take the time to understand who you actually are, so we can find the right workplace for you.</p>
+    <div class="steps-grid">
+      <div class="step-box"><div class="step-num">01</div><div class="step-name">Your Profile</div><div class="step-sub">Who we are talking to</div></div>
+      <div class="step-box"><div class="step-num">02</div><div class="step-name">Personality</div><div class="step-sub">Who you are as a person</div></div>
+      <div class="step-box"><div class="step-num">03</div><div class="step-name">Work Mentality</div><div class="step-sub">How you operate professionally</div></div>
+      <div class="step-box"><div class="step-num">04</div><div class="step-name">Work Preference</div><div class="step-sub">What kind of work suits you</div></div>
+      <div class="step-box"><div class="step-num">05</div><div class="step-name">Future &amp; Ambition</div><div class="step-sub">Where you're headed</div></div>
+    </div>
+    <div class="intro-note">&#128161; There are no right or wrong answers. Answer honestly. The more real your answers, the better your match. This takes about <strong>5 minutes</strong>.</div>
+    <button class="btn btn-white" id="btn-start" style="position:relative;z-index:2;">Start the form &#8594;</button>
+  </div>
+</div>
+
+<!-- ══════════ PANEL 1 — PERSONALITY ══════════ -->
+<div class="panel" id="panel-2">
+  <div class="sec-tag">Category 1</div>
+  <h2 class="sec-title">Personality</h2>
+  <p class="sec-desc">A few questions about who you are. Just be honest. No right or wrong answers here.</p>
+
+  <div class="qcard" id="c1q1">
+    <div class="qlabel">How would your friends describe you in a work setting?</div>
+    <div class="qmeta">Choose up to 2 answers</div>
+    <div class="opts">
+      <div class="opt checkbox" data-name="c1q1" data-val="charge"><div class="dot"></div><span class="opt-text">The one who takes charge</span></div>
+      <div class="opt checkbox" data-name="c1q1" data-val="fast"><div class="dot"></div><span class="opt-text">The one who gets things done fast</span></div>
+      <div class="opt checkbox" data-name="c1q1" data-val="answer"><div class="dot"></div><span class="opt-text">The one who always has an answer</span></div>
+      <div class="opt checkbox" data-name="c1q1" data-val="learns"><div class="dot"></div><span class="opt-text">The one who watches and learns</span></div>
+      <div class="opt checkbox" data-name="c1q1" data-val="fun"><div class="dot"></div><span class="opt-text">The one who makes it fun</span></div>
+      <div class="opt checkbox" data-name="c1q1" data-val="alone"><div class="dot"></div><span class="opt-text">The one who works best alone</span></div>
+      <div class="opt checkbox" data-name="c1q1" data-val="plan"><div class="dot"></div><span class="opt-text">The one who needs to know the plan before starting</span></div>
+      <div class="opt checkbox" data-name="c1q1" data-val="figures"><div class="dot"></div><span class="opt-text">The one who just figures it out as they go</span></div>
+      <div class="opt checkbox" data-name="c1q1" data-val="motivates"><div class="dot"></div><span class="opt-text">The one who motivates others</span></div>
+    </div>
+    <div class="qerr">Please select at least 1 answer.</div>
+  </div>
+
+  <div class="qcard" id="c1q2">
+    <div class="qlabel">In a group you naturally tend to be...</div>
+    <div class="qmeta">Choose up to 2 answers</div>
+    <div class="opts">
+      <div class="opt checkbox" data-name="c1q2" data-val="leader"><div class="dot"></div><span class="opt-text">The leader</span></div>
+      <div class="opt checkbox" data-name="c1q2" data-val="entertainer"><div class="dot"></div><span class="opt-text">The entertainer</span></div>
+      <div class="opt checkbox" data-name="c1q2" data-val="professional"><div class="dot"></div><span class="opt-text">The professional</span></div>
+      <div class="opt checkbox" data-name="c1q2" data-val="mediator"><div class="dot"></div><span class="opt-text">The mediator</span></div>
+      <div class="opt checkbox" data-name="c1q2" data-val="creative"><div class="dot"></div><span class="opt-text">The creative</span></div>
+      <div class="opt checkbox" data-name="c1q2" data-val="listener"><div class="dot"></div><span class="opt-text">The listener</span></div>
+      <div class="opt checkbox" data-name="c1q2" data-val="doer"><div class="dot"></div><span class="opt-text">The doer</span></div>
+      <div class="opt checkbox" data-name="c1q2" data-val="advisor"><div class="dot"></div><span class="opt-text">The advisor</span></div>
+    </div>
+    <div class="qerr">Please select at least 1 answer.</div>
+  </div>
+
+  <div class="qcard" id="c1q3">
+    <div class="qlabel">Do you enjoy talking to difficult people?</div>
+    <div class="qmeta">Choose 1 answer</div>
+    <div class="opts">
+      <div class="opt radio" data-name="c1q3" data-val="yes"><div class="dot"></div><span class="opt-text">Yes</span></div>
+      <div class="opt radio" data-name="c1q3" data-val="depends_person"><div class="dot"></div><span class="opt-text">Depends on the person</span></div>
+      <div class="opt radio" data-name="c1q3" data-val="depends_mood"><div class="dot"></div><span class="opt-text">Depends on my mood</span></div>
+      <div class="opt radio" data-name="c1q3" data-val="sometimes"><div class="dot"></div><span class="opt-text">Sometimes</span></div>
+      <div class="opt radio" data-name="c1q3" data-val="no"><div class="dot"></div><span class="opt-text">No</span></div>
+    </div>
+    <div class="qerr">Please select an answer.</div>
+  </div>
+
+  <div class="qcard" id="c1q4">
+    <div class="qlabel">Are you a social drinker?</div>
+    <div class="qmeta">Choose 1 answer</div>
+    <div class="opts">
+      <div class="opt radio" data-name="c1q4" data-val="absolutely"><div class="dot"></div><span class="opt-text">Absolutely</span></div>
+      <div class="opt radio" data-name="c1q4" data-val="depends"><div class="dot"></div><span class="opt-text">Depends</span></div>
+      <div class="opt radio" data-name="c1q4" data-val="no"><div class="dot"></div><span class="opt-text">No</span></div>
+      <div class="opt radio" data-name="c1q4" data-val="just_drinker"><div class="dot"></div><span class="opt-text">Just a drinker</span></div>
+      <div class="opt radio" data-name="c1q4" data-val="just_social"><div class="dot"></div><span class="opt-text">Just social</span></div>
+    </div>
+    <div class="qerr">Please select an answer.</div>
+  </div>
+
+  <div class="qcard" id="c1q5">
+    <div class="qlabel">How do you typically greet a friend you haven't seen in a while?</div>
+    <div class="qmeta">Choose up to 2 answers</div>
+    <div class="opts">
+      <div class="opt checkbox" data-name="c1q5" data-val="hug"><div class="dot"></div><span class="opt-text">A big hug</span></div>
+      <div class="opt checkbox" data-name="c1q5" data-val="kiss"><div class="dot"></div><span class="opt-text">A kiss on the cheek</span></div>
+      <div class="opt checkbox" data-name="c1q5" data-val="handshake"><div class="dot"></div><span class="opt-text">A handshake</span></div>
+      <div class="opt checkbox" data-name="c1q5" data-val="laugh"><div class="dot"></div><span class="opt-text">A laugh and a joke straight away</span></div>
+      <div class="opt checkbox" data-name="c1q5" data-val="hello"><div class="dot"></div><span class="opt-text">A simple hello</span></div>
+      <div class="opt checkbox" data-name="c1q5" data-val="nod"><div class="dot"></div><span class="opt-text">A nod</span></div>
+      <div class="opt checkbox" data-name="c1q5" data-val="depends"><div class="dot"></div><span class="opt-text">Depends on the person</span></div>
+    </div>
+    <div class="qerr">Please select at least 1 answer.</div>
+  </div>
+
+  <div class="qcard" id="c1q6">
+    <div class="qlabel">When a party is being organised in your friend group, which one are you?</div>
+    <div class="qmeta">Choose 1 answer</div>
+    <div class="opts">
+      <div class="opt radio" data-name="c1q6" data-val="organiser"><div class="dot"></div><span class="opt-text">The organiser</span></div>
+      <div class="opt radio" data-name="c1q6" data-val="playlist"><div class="dot"></div><span class="opt-text">The playlist guy</span></div>
+      <div class="opt radio" data-name="c1q6" data-val="drinks"><div class="dot"></div><span class="opt-text">The one who brings the drinks</span></div>
+      <div class="opt radio" data-name="c1q6" data-val="surprise"><div class="dot"></div><span class="opt-text">The surprise invite</span></div>
+      <div class="opt radio" data-name="c1q6" data-val="showsup"><div class="dot"></div><span class="opt-text">Shows up and sees what happens</span></div>
+      <div class="opt radio" data-name="c1q6" data-val="justtellme"><div class="dot"></div><span class="opt-text">Just tells me when and where</span></div>
+    </div>
+    <div class="qerr">Please select an answer.</div>
+  </div>
+
+  <div class="nav">
+    <button class="btn btn-outline" data-goto="1">&#8592; Back</button>
+    <button class="btn btn-primary" data-from="2" data-goto="3">Next: Work Mentality &#8594;</button>
+  </div>
+</div>
+
+<!-- ══════════ PANEL 1 — YOUR PROFILE ══════════ -->
+<div class="panel" id="panel-1">
+  <div class="sec-tag">Before we begin</div>
+  <h2 class="sec-title">Your Profile</h2>
+  <p class="sec-desc">Just a few basics so we know who we're talking to. This stays private and is only used for your match.</p>
+
+  <div class="qcard" id="id-card">
+    <div class="qlabel">Who are you?</div>
+    <div class="qmeta">Fill in your details below</div>
+
+    <div class="profile-note">
+      &#128274; Your details are <strong>never shared</strong> with any employer without your confirmation first.
+    </div>
+
+    <div class="input-row">
+      <div class="input-group">
+        <label class="input-label" for="inp-firstname">First Name</label>
+        <input class="text-input" type="text" id="inp-firstname" name="first_name" placeholder="Your first name" autocomplete="given-name">
+      </div>
+      <div class="input-group">
+        <label class="input-label" for="inp-lastname">Last Name</label>
+        <input class="text-input" type="text" id="inp-lastname" name="last_name" placeholder="Your last name" autocomplete="family-name">
+      </div>
+    </div>
+
+    <div class="input-group" style="margin-top:16px;">
+      <label class="input-label" for="inp-profile">Profile Number</label>
+      <input class="text-input" type="text" id="inp-profile" name="profile_number" placeholder="e.g. HL-00142" autocomplete="off" style="max-width:260px;">
+      <span style="font-size:12px;color:var(--muted);margin-top:4px;">Your profile number was shared with you when you created your account.</span>
+    </div>
+    <div class="qerr" id="id-err">Please fill in all fields above.</div>
+  </div>
+
+  <div class="nav">
+    <button class="btn btn-outline" data-goto="0">&#8592; Back</button>
+    <button class="btn btn-primary" id="btn-profile-next">Next: Personality &#8594;</button>
+  </div>
+</div>
+
+
+
+<!-- ══════════ PANEL 2 — WORK MENTALITY ══════════ -->
+<div class="panel" id="panel-3">
+  <div class="sec-tag">Category 2</div>
+  <h2 class="sec-title">Work Mentality</h2>
+  <p class="sec-desc">How do you actually operate when you're at work? Be real. These questions have no wrong answer.</p>
+
+  <div class="qcard" id="c2q1">
+    <div class="qlabel">If you make a mistake at work, what happens next?</div>
+    <div class="qmeta">Choose 1 answer</div>
+    <div class="opts">
+      <div class="opt radio" data-name="c2q1" data-val="fix"><div class="dot"></div><span class="opt-text">I fix it before anyone notices</span></div>
+      <div class="opt radio" data-name="c2q1" data-val="manager"><div class="dot"></div><span class="opt-text">I tell my manager immediately</span></div>
+      <div class="opt radio" data-name="c2q1" data-val="colleague"><div class="dot"></div><span class="opt-text">I ask a colleague for help</span></div>
+      <div class="opt radio" data-name="c2q1" data-val="analyse"><div class="dot"></div><span class="opt-text">I analyse what went wrong</span></div>
+      <div class="opt radio" data-name="c2q1" data-val="moveon"><div class="dot"></div><span class="opt-text">I move on and learn from it</span></div>
+    </div>
+    <div class="qerr">Please select an answer.</div>
+  </div>
+
+  <div class="qcard" id="c2q2">
+    <div class="qlabel">You have 5 things to do today. Where do you start?</div>
+    <div class="qmeta">Choose 1 answer</div>
+    <div class="opts">
+      <div class="opt radio" data-name="c2q2" data-val="easiest"><div class="dot"></div><span class="opt-text">The easiest one first</span></div>
+      <div class="opt radio" data-name="c2q2" data-val="hardest"><div class="dot"></div><span class="opt-text">The hardest one first</span></div>
+      <div class="opt radio" data-name="c2q2" data-val="whatever"><div class="dot"></div><span class="opt-text">Whatever comes first</span></div>
+      <div class="opt radio" data-name="c2q2" data-val="plan"><div class="dot"></div><span class="opt-text">I make a plan before starting anything</span></div>
+      <div class="opt radio" data-name="c2q2" data-val="urgent"><div class="dot"></div><span class="opt-text">I ask which one is most urgent</span></div>
+    </div>
+    <div class="qerr">Please select an answer.</div>
+  </div>
+
+  <div class="qcard" id="c2q3">
+    <div class="qlabel">A guest asks you something you don't know the answer to. What do you do?</div>
+    <div class="qmeta">Choose 1 answer</div>
+    <div class="opts">
+      <div class="opt radio" data-name="c2q3" data-val="guess"><div class="dot"></div><span class="opt-text">I give my best guess confidently</span></div>
+      <div class="opt radio" data-name="c2q3" data-val="honest"><div class="dot"></div><span class="opt-text">I tell them honestly I don't know</span></div>
+      <div class="opt radio" data-name="c2q3" data-val="findout"><div class="dot"></div><span class="opt-text">I find someone who does know</span></div>
+      <div class="opt radio" data-name="c2q3" data-val="comeback"><div class="dot"></div><span class="opt-text">I tell them I'll find out and come back</span></div>
+      <div class="opt radio" data-name="c2q3" data-val="google"><div class="dot"></div><span class="opt-text">I google it on the spot</span></div>
+    </div>
+    <div class="qerr">Please select an answer.</div>
+  </div>
+
+  <div class="qcard" id="c2q4">
+    <div class="qlabel">How do you prefer to receive feedback from your manager?</div>
+    <div class="qmeta">Choose 1 answer</div>
+    <div class="opts">
+      <div class="opt radio" data-name="c2q4" data-val="straight"><div class="dot"></div><span class="opt-text">Straight to the point, no filter</span></div>
+      <div class="opt radio" data-name="c2q4" data-val="privately"><div class="dot"></div><span class="opt-text">Privately and calmly</span></div>
+      <div class="opt radio" data-name="c2q4" data-val="written"><div class="dot"></div><span class="opt-text">Written so I can process it</span></div>
+      <div class="opt radio" data-name="c2q4" data-val="moment"><div class="dot"></div><span class="opt-text">During the moment it happens</span></div>
+      <div class="opt radio" data-name="c2q4" data-val="mixed"><div class="dot"></div><span class="opt-text">Mixed with what I did well</span></div>
+    </div>
+    <div class="qerr">Please select an answer.</div>
+  </div>
+
+  <div class="qcard" id="c2q5">
+    <div class="qlabel">Your colleague is late for their shift. What do you do?</div>
+    <div class="qmeta">Choose 1 answer</div>
+    <div class="opts">
+      <div class="opt radio" data-name="c2q5" data-val="owntasks"><div class="dot"></div><span class="opt-text">I make sure my own tasks are finished first</span></div>
+      <div class="opt radio" data-name="c2q5" data-val="cover"><div class="dot"></div><span class="opt-text">I cover their tasks until they arrive</span></div>
+      <div class="opt radio" data-name="c2q5" data-val="call"><div class="dot"></div><span class="opt-text">I give them a quick call to check in</span></div>
+      <div class="opt radio" data-name="c2q5" data-val="mgr"><div class="dot"></div><span class="opt-text">I let the manager know</span></div>
+      <div class="opt radio" data-name="c2q5" data-val="fast"><div class="dot"></div><span class="opt-text">I get their tasks done as fast as I can</span></div>
+    </div>
+    <div class="qerr">Please select an answer.</div>
+  </div>
+
+  <div class="qcard" id="c2q6">
+    <div class="qlabel">How do you usually let someone know you disagree with them?</div>
+    <div class="qmeta">Choose 1 answer</div>
+    <div class="opts">
+      <div class="opt radio" data-name="c2q6" data-val="directly"><div class="dot"></div><span class="opt-text">I say it directly in the moment</span></div>
+      <div class="opt radio" data-name="c2q6" data-val="wait"><div class="dot"></div><span class="opt-text">I wait for the right time to bring it up</span></div>
+      <div class="opt radio" data-name="c2q6" data-val="message"><div class="dot"></div><span class="opt-text">I send a message instead of saying it face to face</span></div>
+      <div class="opt radio" data-name="c2q6" data-val="letgo"><div class="dot"></div><span class="opt-text">I let it go if it's not important enough</span></div>
+      <div class="opt radio" data-name="c2q6" data-val="questions"><div class="dot"></div><span class="opt-text">I ask questions until they see my point themselves</span></div>
+    </div>
+    <div class="qerr">Please select an answer.</div>
+  </div>
+
+  <div class="qcard" id="c2q7">
+    <div class="qlabel">It's the busiest moment of your shift. Everything hits at once. What describes you best?</div>
+    <div class="qmeta">Choose 1 answer</div>
+    <div class="opts">
+      <div class="opt radio" data-name="c2q7" data-val="onething"><div class="dot"></div><span class="opt-text">I focus on one thing at a time</span></div>
+      <div class="opt radio" data-name="c2q7" data-val="prioritise"><div class="dot"></div><span class="opt-text">I prioritise quickly and attack the list</span></div>
+      <div class="opt radio" data-name="c2q7" data-val="help"><div class="dot"></div><span class="opt-text">I ask for help immediately</span></div>
+      <div class="opt radio" data-name="c2q7" data-val="justwork"><div class="dot"></div><span class="opt-text">I just work</span></div>
+      <div class="opt radio" data-name="c2q7" data-val="thrive"><div class="dot"></div><span class="opt-text">I thrive in these moments</span></div>
+    </div>
+    <div class="qerr">Please select an answer.</div>
+  </div>
+
+  <div class="nav">
+    <button class="btn btn-outline" data-goto="2">&#8592; Back</button>
+    <button class="btn btn-primary" data-from="3" data-goto="4">Next: Work Preference &#8594;</button>
+  </div>
+</div>
+
+<!-- ══════════ PANEL 3 — WORK PREFERENCE ══════════ -->
+<div class="panel" id="panel-4">
+  <div class="sec-tag">Category 3</div>
+  <h2 class="sec-title">Work Preference</h2>
+  <p class="sec-desc">What kind of work environment actually suits you? Be honest about what you enjoy.</p>
+
+  <div class="qcard" id="c3q1">
+    <div class="qlabel">Do you prefer working in a big buzzing environment or a smaller more intimate setting?</div>
+    <div class="qmeta">Choose 1 answer</div>
+    <div class="opts">
+      <div class="opt radio" data-name="c3q1" data-val="big"><div class="dot"></div><span class="opt-text">Big and buzzing</span></div>
+      <div class="opt radio" data-name="c3q1" data-val="small"><div class="dot"></div><span class="opt-text">Small and intimate</span></div>
+      <div class="opt radio" data-name="c3q1" data-val="doesntmatter"><div class="dot"></div><span class="opt-text">Doesn't matter to me</span></div>
+      <div class="opt radio" data-name="c3q1" data-val="colleagues"><div class="dot"></div><span class="opt-text">Depends on the colleagues</span></div>
+    </div>
+    <div class="qerr">Please select an answer.</div>
+  </div>
+
+  <div class="qcard" id="c3q2">
+    <div class="qlabel">Your shift gets changed last minute. Your reaction?</div>
+    <div class="qmeta">Choose 1 answer</div>
+    <div class="opts">
+      <div class="opt radio" data-name="c3q2" data-val="fine"><div class="dot"></div><span class="opt-text">Fine by me, I adapt easily</span></div>
+      <div class="opt radio" data-name="c3q2" data-val="rearrange"><div class="dot"></div><span class="opt-text">I need some time to rearrange but okay</span></div>
+      <div class="opt radio" data-name="c3q2" data-val="advance"><div class="dot"></div><span class="opt-text">I prefer knowing in advance always</span></div>
+      <div class="opt radio" data-name="c3q2" data-val="howlast"><div class="dot"></div><span class="opt-text">Depends on how last minute</span></div>
+      <div class="opt radio" data-name="c3q2" data-val="unhappy"><div class="dot"></div><span class="opt-text">I'll do it but I won't be happy</span></div>
+    </div>
+    <div class="qerr">Please select an answer.</div>
+  </div>
+
+  <div class="qcard" id="c3q3">
+    <div class="qlabel">Do you prefer having one specific role or doing a bit of everything?</div>
+    <div class="qmeta">Choose 1 answer</div>
+    <div class="opts">
+      <div class="opt radio" data-name="c3q3" data-val="specific"><div class="dot"></div><span class="opt-text">One specific role, I like to master it</span></div>
+      <div class="opt radio" data-name="c3q3" data-val="everything"><div class="dot"></div><span class="opt-text">A bit of everything, keeps it interesting</span></div>
+      <div class="opt radio" data-name="c3q3" data-val="workplace"><div class="dot"></div><span class="opt-text">Depends on the workplace</span></div>
+      <div class="opt radio" data-name="c3q3" data-val="expand"><div class="dot"></div><span class="opt-text">I start specific and expand over time</span></div>
+      <div class="opt radio" data-name="c3q3" data-val="flexible"><div class="dot"></div><span class="opt-text">Whatever is needed, I'm flexible</span></div>
+    </div>
+    <div class="qerr">Please select an answer.</div>
+  </div>
+
+  <div class="qcard" id="c3q4">
+    <div class="qlabel">How much guest interaction do you enjoy?</div>
+    <div class="qmeta">Choose 1 answer</div>
+    <div class="opts">
+      <div class="opt radio" data-name="c3q4" data-val="more"><div class="dot"></div><span class="opt-text">The more the better, I love people</span></div>
+      <div class="opt radio" data-name="c3q4" data-val="balance"><div class="dot"></div><span class="opt-text">A healthy balance of both</span></div>
+      <div class="opt radio" data-name="c3q4" data-val="behind"><div class="dot"></div><span class="opt-text">I prefer working behind the scenes</span></div>
+      <div class="opt radio" data-name="c3q4" data-val="type"><div class="dot"></div><span class="opt-text">Depends on the type of guest</span></div>
+      <div class="opt radio" data-name="c3q4" data-val="either"><div class="dot"></div><span class="opt-text">I don't mind either way</span></div>
+    </div>
+    <div class="qerr">Please select an answer.</div>
+  </div>
+
+  <div class="qcard" id="c3q5">
+    <div class="qlabel">What kind of company style suits you best?</div>
+    <div class="qmeta">Choose up to 2 answers</div>
+    <div class="opts">
+      <div class="opt checkbox" data-name="c3q5" data-val="luxury"><div class="dot"></div><span class="opt-text">Luxury and high end</span></div>
+      <div class="opt checkbox" data-name="c3q5" data-val="modern"><div class="dot"></div><span class="opt-text">Modern and trendy</span></div>
+      <div class="opt checkbox" data-name="c3q5" data-val="traditional"><div class="dot"></div><span class="opt-text">Traditional and classic</span></div>
+      <div class="opt checkbox" data-name="c3q5" data-val="casual"><div class="dot"></div><span class="opt-text">Casual and relaxed</span></div>
+      <div class="opt checkbox" data-name="c3q5" data-val="young"><div class="dot"></div><span class="opt-text">Young and energetic</span></div>
+    </div>
+    <div class="qerr">Please select at least 1 answer.</div>
+  </div>
+
+  <div class="qcard" id="c3q6">
+    <div class="qlabel">How do you handle overtime or staying longer than expected?</div>
+    <div class="qmeta">Choose 1 answer</div>
+    <div class="opts">
+      <div class="opt radio" data-name="c3q6" data-val="noproblem"><div class="dot"></div><span class="opt-text">No problem, happy to help</span></div>
+      <div class="opt radio" data-name="c3q6" data-val="occasionally"><div class="dot"></div><span class="opt-text">Fine occasionally but not regularly</span></div>
+      <div class="opt radio" data-name="c3q6" data-val="compensated"><div class="dot"></div><span class="opt-text">Only if I'm compensated</span></div>
+      <div class="opt radio" data-name="c3q6" data-val="stick"><div class="dot"></div><span class="opt-text">I prefer to stick to my hours</span></div>
+      <div class="opt radio" data-name="c3q6" data-val="depends"><div class="dot"></div><span class="opt-text">Depends on the situation</span></div>
+    </div>
+    <div class="qerr">Please select an answer.</div>
+  </div>
+
+  <div class="qcard" id="c3q7">
+    <div class="qlabel">Hospitality can be physically demanding. On your feet, carrying, setting up. Does that suit you?</div>
+    <div class="qmeta">Choose 1 answer</div>
+    <div class="opts">
+      <div class="opt radio" data-name="c3q7" data-val="absolutely"><div class="dot"></div><span class="opt-text">Absolutely, I don't mind at all</span></div>
+      <div class="opt radio" data-name="c3q7" data-val="youngok"><div class="dot"></div><span class="opt-text">Fine for now, I'm young</span></div>
+      <div class="opt radio" data-name="c3q7" data-val="notevery"><div class="dot"></div><span class="opt-text">As long as it's not every shift</span></div>
+      <div class="opt radio" data-name="c3q7" data-val="less"><div class="dot"></div><span class="opt-text">I prefer a less physical role</span></div>
+      <div class="opt radio" data-name="c3q7" data-val="no"><div class="dot"></div><span class="opt-text">No, not my thing</span></div>
+    </div>
+    <div class="qerr">Please select an answer.</div>
+  </div>
+
+  <div class="nav">
+    <button class="btn btn-outline" data-goto="3">&#8592; Back</button>
+    <button class="btn btn-primary" data-from="4" data-goto="5">Next: Future &amp; Ambition &#8594;</button>
+  </div>
+</div>
+
+<!-- ══════════ PANEL 4 — FUTURE & AMBITION ══════════ -->
+<div class="panel" id="panel-5">
+  <div class="sec-tag">Category 4</div>
+  <h2 class="sec-title">Future &amp; Ambition</h2>
+  <p class="sec-desc">Last category. Where are you headed and what drives you? Be honest with yourself.</p>
+
+  <div class="qcard" id="c4q1">
+    <div class="qlabel">What is your biggest career goal?</div>
+    <div class="qmeta">Choose 1 answer</div>
+    <div class="opts">
+      <div class="opt radio" data-name="c4q1" data-val="ownbiz"><div class="dot"></div><span class="opt-text">Running my own business</span></div>
+      <div class="opt radio" data-name="c4q1" data-val="leadteam"><div class="dot"></div><span class="opt-text">Leading a team</span></div>
+      <div class="opt radio" data-name="c4q1" data-val="master"><div class="dot"></div><span class="opt-text">Mastering one specific area of hospitality</span></div>
+      <div class="opt radio" data-name="c4q1" data-val="experience"><div class="dot"></div><span class="opt-text">Gaining as much experience as possible across different places</span></div>
+      <div class="opt radio" data-name="c4q1" data-val="stable"><div class="dot"></div><span class="opt-text">Having a stable and happy work life</span></div>
+    </div>
+    <div class="qerr">Please select an answer.</div>
+  </div>
+
+  <div class="qcard" id="c4q2">
+    <div class="qlabel">How ambitious are you when it comes to your career?</div>
+    <div class="qmeta">Choose 1 answer</div>
+    <div class="opts">
+      <div class="opt radio" data-name="c4q2" data-val="top"><div class="dot"></div><span class="opt-text">I want to reach the top, no matter what</span></div>
+      <div class="opt radio" data-name="c4q2" data-val="steadily"><div class="dot"></div><span class="opt-text">I want to grow steadily at my own pace</span></div>
+      <div class="opt radio" data-name="c4q2" data-val="good"><div class="dot"></div><span class="opt-text">I want to be good at what I do, nothing more</span></div>
+      <div class="opt radio" data-name="c4q2" data-val="build"><div class="dot"></div><span class="opt-text">I want to build something of my own one day</span></div>
+      <div class="opt radio" data-name="c4q2" data-val="life"><div class="dot"></div><span class="opt-text">I go where life takes me</span></div>
+    </div>
+    <div class="qerr">Please select an answer.</div>
+  </div>
+
+  <div class="qcard" id="c4q3">
+    <div class="qlabel">Is taking on more responsibility something you actively look for?</div>
+    <div class="qmeta">Choose 1 answer</div>
+    <div class="opts">
+      <div class="opt radio" data-name="c4q3" data-val="always"><div class="dot"></div><span class="opt-text">Yes, always pushing for more</span></div>
+      <div class="opt radio" data-name="c4q3" data-val="rightmoment"><div class="dot"></div><span class="opt-text">Yes but at the right moment</span></div>
+      <div class="opt radio" data-name="c4q3" data-val="naturally"><div class="dot"></div><span class="opt-text">Not really, it comes naturally or not</span></div>
+      <div class="opt radio" data-name="c4q3" data-val="perfect"><div class="dot"></div><span class="opt-text">I prefer to perfect my current role first</span></div>
+      <div class="opt radio" data-name="c4q3" data-val="myplace"><div class="dot"></div><span class="opt-text">No, I like knowing my place</span></div>
+    </div>
+    <div class="qerr">Please select an answer.</div>
+  </div>
+
+  <div class="qcard" id="c4q4">
+    <div class="qlabel">How comfortable are you working within a strict hierarchy?</div>
+    <div class="qmeta">Choose 1 answer</div>
+    <div class="opts">
+      <div class="opt radio" data-name="c4q4" data-val="verycomf"><div class="dot"></div><span class="opt-text">Very comfortable, I like clear structure</span></div>
+      <div class="opt radio" data-name="c4q4" data-val="speakup"><div class="dot"></div><span class="opt-text">Fine as long as there is room to speak up</span></div>
+      <div class="opt radio" data-name="c4q4" data-val="environment"><div class="dot"></div><span class="opt-text">Depends on the environment</span></div>
+      <div class="opt radio" data-name="c4q4" data-val="flat"><div class="dot"></div><span class="opt-text">I prefer a flat and open structure</span></div>
+    </div>
+    <div class="qerr">Please select an answer.</div>
+  </div>
+
+  <div class="qcard" id="c4q5">
+    <div class="qlabel">What matters most to you in your future career?</div>
+    <div class="qmeta">Choose 1 answer</div>
+    <div class="opts">
+      <div class="opt radio" data-name="c4q5" data-val="financial"><div class="dot"></div><span class="opt-text">Financial growth</span></div>
+      <div class="opt radio" data-name="c4q5" data-val="personal"><div class="dot"></div><span class="opt-text">Personal development</span></div>
+      <div class="opt radio" data-name="c4q5" data-val="impact"><div class="dot"></div><span class="opt-text">Making an impact</span></div>
+      <div class="opt radio" data-name="c4q5" data-val="balance"><div class="dot"></div><span class="opt-text">Work life balance</span></div>
+      <div class="opt radio" data-name="c4q5" data-val="recognition"><div class="dot"></div><span class="opt-text">Recognition and status</span></div>
+    </div>
+    <div class="qerr">Please select an answer.</div>
+  </div>
+
+  <div class="nav">
+    <button class="btn btn-outline" data-goto="4">&#8592; Back</button>
+    <button class="btn btn-primary" data-from="5" data-goto="6">Submit Form &#8594;</button>
+  </div>
+</div>
+
+<!-- ══════════ PANEL 5 — THANK YOU ══════════ -->
+<div class="panel" id="panel-6">
+  <div class="ty-card">
+    <div class="ty-icon">&#10003;</div>
+    <h2 class="ty-title">You're <em>all set</em></h2>
+    <p class="ty-desc">Thank you for taking the time to fill this in honestly. We now have everything we need to start looking for your perfect match in hospitality.</p>
+    <div class="ty-grid">
+      <div class="ty-box"><div class="ty-ico">&#129309;</div><div class="ty-txt">We'll reach out personally. No automated messages</div></div>
+      <div class="ty-box"><div class="ty-ico">&#127919;</div><div class="ty-txt">Only matched with places that fit you</div></div>
+      <div class="ty-box"><div class="ty-ico">&#128274;</div><div class="ty-txt">Your profile stays private until you confirm a match</div></div>
+    </div>
+    <p class="ty-note">We'll be in touch soon. In the meantime, feel free to reach out anytime.</p>
+    <button class="btn btn-white" id="btn-restart" style="position:relative;z-index:2;">&#8592; Back to start</button>
+  </div>
+</div>
+
+<div style="display:none">
+  <input type="hidden" name="c1q1" id="h-c1q1">
+  <input type="hidden" name="c1q2" id="h-c1q2">
+  <input type="hidden" name="c1q3" id="h-c1q3">
+  <input type="hidden" name="c1q4" id="h-c1q4">
+  <input type="hidden" name="c1q5" id="h-c1q5">
+  <input type="hidden" name="c1q6" id="h-c1q6">
+  <input type="hidden" name="c2q1" id="h-c2q1">
+  <input type="hidden" name="c2q2" id="h-c2q2">
+  <input type="hidden" name="c2q3" id="h-c2q3">
+  <input type="hidden" name="c2q4" id="h-c2q4">
+  <input type="hidden" name="c2q5" id="h-c2q5">
+  <input type="hidden" name="c2q6" id="h-c2q6">
+  <input type="hidden" name="c2q7" id="h-c2q7">
+  <input type="hidden" name="c3q1" id="h-c3q1">
+  <input type="hidden" name="c3q2" id="h-c3q2">
+  <input type="hidden" name="c3q3" id="h-c3q3">
+  <input type="hidden" name="c3q4" id="h-c3q4">
+  <input type="hidden" name="c3q5" id="h-c3q5">
+  <input type="hidden" name="c3q6" id="h-c3q6">
+  <input type="hidden" name="c3q7" id="h-c3q7">
+  <input type="hidden" name="c4q1" id="h-c4q1">
+  <input type="hidden" name="c4q2" id="h-c4q2">
+  <input type="hidden" name="c4q3" id="h-c4q3">
+  <input type="hidden" name="c4q4" id="h-c4q4">
+  <input type="hidden" name="c4q5" id="h-c4q5">
+</div>
+
+</div>
+</main>
+
+<script>
+(function () {
+
+  /* ─── EmailJS init ──────────────────────────── */
+  emailjs.init('2QKLRwbv2xS4SSiX9');
+
+  /* ─── state ─────────────────────────────────── */
+  var current  = 0;
+  /* selections: { groupName: [val, val] } */
+  var selected = {};
+  /* max per group */
+  var maxFor   = { c1q1:2, c1q2:2, c1q5:2, c3q5:2 };
+
+  /* ─── helpers ────────────────────────────────── */
+  function byId(id)     { return document.getElementById(id); }
+  function all(sel, ctx){ return Array.prototype.slice.call((ctx||document).querySelectorAll(sel)); }
+
+  /* ─── progress ───────────────────────────────── */
+  function setProgress(idx) {
+    byId('prog-bar').style.width = (idx / 6 * 100) + '%';
+    byId('prog-text').textContent = 'Step ' + (idx+1) + ' of 7';
+  }
+
+  /* ─── show panel ─────────────────────────────── */
+  function showPanel(idx) {
+    all('.panel').forEach(function(p){ p.classList.remove('active'); });
+    all('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+    byId('panel-' + idx).classList.add('active');
+    all('.tab-btn')[idx].classList.add('active');
+    current = idx;
+    setProgress(idx);
+    window.scrollTo({top:0, behavior:'smooth'});
+  }
+
+  /* ─── render selected state for a group ─────── */
+  function renderGroup(name) {
+    var group = selected[name] || {};
+    all('.opt[data-name="' + name + '"]').forEach(function(opt) {
+      if (group[opt.getAttribute('data-val')]) {
+        opt.classList.add('selected');
+      } else {
+        opt.classList.remove('selected');
+      }
+    });
+  }
+
+  /* ─── option click ───────────────────────────── */
+  function handleOpt(opt) {
+    var name  = opt.getAttribute('data-name');
+    var val   = opt.getAttribute('data-val');
+    var txt   = opt.querySelector('.opt-text').textContent.trim();
+    var type  = opt.classList.contains('radio') ? 'radio' : 'checkbox';
+    var max   = maxFor[name] || 1;
+
+    if (!selected[name]) selected[name] = {};
+
+    if (type === 'radio') {
+      /* For radio: store single value, keyed by val for dedup */
+      selected[name] = {};
+      selected[name][val] = txt;
+    } else {
+      /* For checkbox: toggle */
+      if (selected[name][val]) {
+        delete selected[name][val];
+      } else {
+        /* Only add if under max */
+        if (Object.keys(selected[name]).length < max) {
+          selected[name][val] = txt;
+        }
+      }
+    }
+
+    renderGroup(name);
+    opt.closest('.qcard').classList.remove('has-error');
+  }
+
+  /* ─── validation ─────────────────────────────── */
+  function validate(panelIdx) {
+    var ok = true;
+    all('.qcard', byId('panel-' + panelIdx)).forEach(function(card) {
+      card.classList.remove('has-error');
+      /* find all unique group names in this card */
+      var names = {};
+      all('.opt', card).forEach(function(o){ names[o.getAttribute('data-name')] = true; });
+      Object.keys(names).forEach(function(n) {
+        if (!selected[n] || Object.keys(selected[n]).length === 0) {
+          card.classList.add('has-error');
+          ok = false;
+        }
+      });
+    });
+    if (!ok) {
+      var first = document.querySelector('#panel-' + panelIdx + ' .qcard.has-error');
+      if (first) first.scrollIntoView({behavior:'smooth', block:'center'});
+    }
+    return ok;
+  }
+
+  /* ─── wire option clicks ─────────────────────── */
+  all('.opt').forEach(function(opt) {
+    opt.addEventListener('click', function() { handleOpt(opt); });
+  });
+
+  /* ─── wire navigation ────────────────────────── */
+  /* Start button */
+  byId('btn-start').addEventListener('click', function() { showPanel(1); });
+
+  /* Restart button */
+  byId('btn-restart').addEventListener('click', function() { showPanel(0); });
+
+  /* Profile next button - validate text inputs */
+  byId('btn-profile-next').addEventListener('click', function() {
+    var fn = byId('inp-firstname').value.trim();
+    var ln = byId('inp-lastname').value.trim();
+    var pn = byId('inp-profile').value.trim();
+    var card = byId('id-card');
+    var err  = byId('id-err');
+    if (!fn || !ln || !pn) {
+      card.classList.add('has-error');
+      err.style.display = 'block';
+      card.scrollIntoView({behavior:'smooth', block:'center'});
+      return;
+    }
+    card.classList.remove('has-error');
+    err.style.display = 'none';
+    all('.tab-btn')[1].classList.add('done');
+    showPanel(2);
+  });
+
+  /* Next / Submit buttons have data-from and data-goto */
+  all('[data-from]').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var from = parseInt(btn.getAttribute('data-from'));
+      var to   = parseInt(btn.getAttribute('data-goto'));
+      if (!validate(from)) return;
+      all('.tab-btn')[from].classList.add('done');
+      /* If this is the final submit (going to panel 6), populate hidden fields and submit */
+      if (to === 6) {
+        var params = {
+          first_name:     byId('inp-firstname').value.trim(),
+          last_name:      byId('inp-lastname').value.trim(),
+          profile_number: byId('inp-profile').value.trim(),
+          c1q1: Object.values(selected['c1q1'] || {}).join(' | '),
+          c1q2: Object.values(selected['c1q2'] || {}).join(' | '),
+          c1q3: Object.values(selected['c1q3'] || {}).join(' | '),
+          c1q4: Object.values(selected['c1q4'] || {}).join(' | '),
+          c1q5: Object.values(selected['c1q5'] || {}).join(' | '),
+          c1q6: Object.values(selected['c1q6'] || {}).join(' | '),
+          c2q1: Object.values(selected['c2q1'] || {}).join(' | '),
+          c2q2: Object.values(selected['c2q2'] || {}).join(' | '),
+          c2q3: Object.values(selected['c2q3'] || {}).join(' | '),
+          c2q4: Object.values(selected['c2q4'] || {}).join(' | '),
+          c2q5: Object.values(selected['c2q5'] || {}).join(' | '),
+          c2q6: Object.values(selected['c2q6'] || {}).join(' | '),
+          c2q7: Object.values(selected['c2q7'] || {}).join(' | '),
+          c3q1: Object.values(selected['c3q1'] || {}).join(' | '),
+          c3q2: Object.values(selected['c3q2'] || {}).join(' | '),
+          c3q3: Object.values(selected['c3q3'] || {}).join(' | '),
+          c3q4: Object.values(selected['c3q4'] || {}).join(' | '),
+          c3q5: Object.values(selected['c3q5'] || {}).join(' | '),
+          c3q6: Object.values(selected['c3q6'] || {}).join(' | '),
+          c3q7: Object.values(selected['c3q7'] || {}).join(' | '),
+          c4q1: Object.values(selected['c4q1'] || {}).join(' | '),
+          c4q2: Object.values(selected['c4q2'] || {}).join(' | '),
+          c4q3: Object.values(selected['c4q3'] || {}).join(' | '),
+          c4q4: Object.values(selected['c4q4'] || {}).join(' | '),
+          c4q5: Object.values(selected['c4q5'] || {}).join(' | ')
+        };
+        /* Disable submit button to prevent multiple submissions */
+        var submitBtn = btn;
+        submitBtn.disabled = true;
+        submitBtn.textContent = 'Sending...';
+
+        emailjs.send('service_93uy9uk', 'template_7r3fw8i', params)
+          .then(function() {
+            showPanel(6);
+          })
+          .catch(function(error) {
+            alert('Submission error: ' + JSON.stringify(error));
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Submit Form →';
+            showPanel(6);
+          });
+        return;
+      }
+      showPanel(to);
+    });
+  });
+
+  /* Back buttons have only data-goto */
+  all('[data-goto]:not([data-from])').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      showPanel(parseInt(btn.getAttribute('data-goto')));
+    });
+  });
+
+  /* Tab nav — only navigate to already-visited panels */
+  all('.tab-btn').forEach(function(btn, idx) {
+    btn.addEventListener('click', function() {
+      if (idx < current) showPanel(idx);
+    });
+  });
+
+  /* init */
+  setProgress(0);
+
+})();
+</script>
+</body>
+</html>
